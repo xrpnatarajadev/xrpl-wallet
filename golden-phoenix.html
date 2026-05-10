@@ -421,20 +421,56 @@ async function loadWallet(){
 
 // ── METADATA ──────────────────────────────────────────────────────────────────
 // ── METADATA ──────────────────────────────────────────────────────────────────
+// ── METADATA ──────────────────────────────────────────────────────────────────
 async function loadMeta(nfts){
-  // 1. Tenta imagens rápidas primeiro com um gateway melhor
   nfts.forEach(nft=>{
-    const uri=h2s(nft.URI||'');
+    const uri = h2s(nft.URI||'');
     let img = '';
-    
-    // Expressão regular mais flexível (não exige .json no final)
+    let num = '';
+
     const m = uri.match(/ipfs:\/\/([^/]+)\/?(.*)/i);
     if(m){
       nft._cid = m[1];
-      let fileId = m[2].replace('.json', ''); // Limpa a extensão se existir
-      nft._num = fileId || String(nft.nft_serial);
-      img = `https://dweb.link/ipfs/${nft._cid}/${nft._num}.png`;
+      num = m[2].replace('.json', '');
+      nft._num = num;
+      img = `https://cloudflare-ipfs.com/ipfs/${nft._cid}/${num}.png`;
     }
+
+    nft._meta={name:num||('#'+(nft.nft_serial??'?')), image:img, attributes:[], hasSymbol:false, symbolValue:null};
+    nftMap[nft.NFTokenID]=nft;
+  });
+
+  renderGallery(nfts);
+
+  await Promise.allSettled(nfts.slice(0,60).map(async nft=>{
+    if(!nft._cid||!nft._num) return;
+    try{
+      const r = await fetch(`https://cloudflare-ipfs.com/ipfs/${nft._cid}/${nft._num}.json`);
+      if(r.ok){
+        const meta = await r.json();
+        const attrs = meta.attributes||[];
+        let finalImg = meta.image || '';
+
+        // Converte o link do IPFS para um gateway visível
+        if(finalImg.startsWith('ipfs://')){
+          finalImg = finalImg.replace('ipfs://', 'https://cloudflare-ipfs.com/ipfs/');
+        } else if (!finalImg) {
+          finalImg = `https://cloudflare-ipfs.com/ipfs/${nft._cid}/${nft._num}.png`;
+        }
+
+        nft._meta={
+          name: meta.name || nft._num,
+          image: finalImg,
+          attributes: attrs,
+          hasSymbol: !!attrs.find(a=>a.trait_type==='Symbols'),
+          symbolValue: attrs.find(a=>a.trait_type==='Symbols')?.value||null
+        };
+        nftMap[nft.NFTokenID]=nft;
+      }
+    }catch(e){}
+  }));
+  renderGallery(nfts);
+}
     
     // Fallback garantido da base de dados caso a URI esteja formatada diferente
     if(!img && nft.nft_serial){
@@ -476,6 +512,7 @@ async function loadMeta(nfts){
 }
 
 // ── GALLERY ───────────────────────────────────────────────────────────────────
+// ── GALLERY ───────────────────────────────────────────────────────────────────
 function renderGallery(nfts){
   const grid=document.getElementById('wallet-grid');
   if(!nfts.length){grid.innerHTML='<div class="empty col">No Golden Phoenix NFTs found in this wallet</div>';return;}
@@ -485,7 +522,7 @@ function renderGallery(nfts){
     const name=meta.name||('#'+(n.nft_serial??'?'));
     const hasSym=meta.hasSymbol;
     return`<div class="nft-card${hasSym?' has-sym':''}" onclick="openModal('${n.NFTokenID}')">
-      <div class="nft-img">${img?`<img src="${img}" onerror="this.parentElement.innerHTML='🖼'" loading="lazy"/>`:' 🖼'}</div>
+      <div class="nft-img">${img?`<img src="${img}" onerror="if(!this.dataset.tried){this.dataset.tried=true;this.src=this.src.replace('cloudflare-ipfs.com','ipfs.io');}else{this.parentElement.innerHTML='🖼'}" loading="lazy"/>`:' 🖼'}</div>
       ${hasSym?`<div class="nft-sym-dot" title="Symbol: ${esc(meta.symbolValue||'')}">⚡</div>`:''}
       <div class="nft-info">
         <div class="nft-name">${esc(name)}</div>
