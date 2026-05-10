@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XRPL Wallet Connect</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <script src="https://xumm.app/assets/cdn/xumm.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #050a0f; --surface: #0d1a26; --surface2: #0f2233;
+      --border: #1a3a52; --accent: #00d4ff; --accent2: #0066cc;
+      --accent-glow: rgba(0,212,255,0.15); --text: #e8f4fd;
+      --muted: #4a7a9b; --success: #00ff88; --danger: #ff4466;
+      --gold: #f0b429;
+    }
+    body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px; pointer-events: none; z-index: 0;
+    }
+    .wrap { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; padding: 40px 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 48px; }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #000; }
+    .logo-text { font-size: 18px; font-weight: 800; }
+    .logo-text span { color: var(--accent); }
+    .pill { display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+    .dot.on { background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; position: relative; overflow: hidden; }
+    .card::before { content: ''; position: absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity:.5; }
+
+    /* LOGIN */
+    #s-login { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 28px; }
+    .big-icon { font-size: 64px; }
+    .login-title { font-size: 30px; font-weight: 800; letter-spacing: -1px; }
+    .login-title span { color: var(--accent); }
+    .login-sub { color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 380px; margin-top: 10px; }
+    .igroup { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 8px; }
+    .ilabel { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; text-align: left; }
+    .ifield { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 13px; outline: none; transition: border-color .2s; }
+    .ifield:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .ifield::placeholder { color: var(--muted); }
+    .inote { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); text-align: left; }
+    .inote a { color: var(--accent); text-decoration: none; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 28px; border-radius: 10px; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; border: none; transition: all .2s; }
+    .btn-p { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #000; width: 100%; max-width: 440px; }
+    .btn-p:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,212,255,.25); }
+    .btn-p:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .btn-s { padding: 9px 18px; font-size: 13px; background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .btn-s:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-d { background: rgba(255,68,102,.1); color: var(--danger); border: 1px solid rgba(255,68,102,.3); padding: 9px 18px; font-size: 13px; }
+    .btn-d:hover { background: rgba(255,68,102,.2); }
+    #err { color: var(--danger); font-size: 12px; font-family: 'Space Mono', monospace; display: none; }
+
+    /* WALLET */
+    #s-wallet { display: none; flex-direction: column; gap: 32px; }
+    .w-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+    .w-id { display: flex; align-items: center; gap: 16px; }
+    .avatar { width: 52px; height: 52px; border-radius: 12px; background: linear-gradient(135deg, var(--accent2), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #000; overflow: hidden; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .w-name { font-size: 20px; font-weight: 800; }
+    .w-addr { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 4px; cursor: pointer; word-break: break-all; }
+    .w-addr:hover { color: var(--accent); }
+    .divider { height: 1px; background: var(--border); }
+    .sec-title { font-family: 'Space Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+    .sec-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* STATS */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+    .scard { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; transition: border-color .2s, transform .2s; }
+    .scard:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .slabel { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .sval { font-size: 24px; font-weight: 800; letter-spacing: -.5px; line-height: 1; }
+    .sunit { font-size: 12px; color: var(--muted); margin-left: 3px; font-weight: 400; }
+    .ssub { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 6px; }
+    .sk { background: linear-gradient(90deg, var(--border) 25%, var(--surface2) 50%, var(--border) 75%); background-size: 200% 100%; animation: sh 1.5s infinite; border-radius: 6px; height: 20px; width: 80px; display: inline-block; }
+    @keyframes sh { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* COLLECTION FILTER */
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-btn { padding: 7px 16px; border-radius: 999px; font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all .2s; }
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+    .filter-btn.gold.active { background: var(--gold); border-color: var(--gold); color: #000; }
+    .nft-count { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+
+    /* NFT GRID */
+    .nft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 16px; }
+    .nft-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color .2s, transform .2s; cursor: pointer; }
+    .nft-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+    .nft-card.gold:hover { border-color: var(--gold); }
+    .nft-img { width: 100%; aspect-ratio: 1; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 32px; overflow: hidden; position: relative; }
+    .nft-img img { width: 100%; height: 100%; object-fit: cover; }
+    .nft-img .loading-img { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--surface2); }
+    .nft-info { padding: 10px 12px; }
+    .nft-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nft-col { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nft-badge { display: inline-block; font-family: 'Space Mono', monospace; font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-top: 4px; }
+    .nft-badge.gp { background: rgba(240,180,41,.15); color: var(--gold); border: 1px solid rgba(240,180,41,.3); }
+    .nft-badge.oo { background: rgba(0,212,255,.1); color: var(--accent); border: 1px solid rgba(0,212,255,.2); }
+
+    /* MODAL */
+    #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 100; align-items: center; justify-content: center; padding: 24px; }
+    #modal.open { display: flex; }
+    .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; max-width: 440px; width: 100%; position: relative; max-height: 90vh; overflow-y: auto; }
+    .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+    .modal-img { width: 100%; aspect-ratio: 1; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 64px; margin-bottom: 16px; overflow: hidden; }
+    .modal-img img { width: 100%; height: 100%; object-fit: cover; }
+    .modal-name { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+    .modal-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .modal-row:last-child { border-bottom: none; }
+    .mkey { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); flex-shrink: 0; }
+    .mval { font-family: 'Space Mono', monospace; font-size: 11px; word-break: break-all; text-align: right; max-width: 65%; }
+    .modal-link { display: block; margin-top: 14px; text-align: center; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--accent); text-decoration: none; padding: 10px; border: 1px solid var(--border); border-radius: 8px; }
+    .modal-link:hover { background: var(--accent-glow); }
+
+    /* TOAST */
+    #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; font-size: 13px; transform: translateY(80px); opacity: 0; transition: all .3s; z-index: 999; }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,212,255,.3); border-top-color: var(--accent); border-radius: 50%; animation: sp .8s linear infinite; }
+    @keyframes sp { to { transform: rotate(360deg); } }
+    .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; grid-column: 1/-1; }
+
+    @media(max-width:600px){ .card{padding:20px;} .stats{grid-template-columns:1fr 1fr;} .nft-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">X</div>
+      <div class="logo-text">XRPL <span>Connect</span></div>
+    </div>
+    <div class="pill">
+      <div class="dot" id="dot"></div>
+      <span id="status">Desconectado</span>
+    </div>
+  </header>
+
+  <div class="card">
+    <!-- LOGIN -->
+    <div id="s-login">
+      <div class="big-icon">🦊</div>
+      <div>
+        <div class="login-title">Conecte sua <span>Xaman Wallet</span></div>
+        <p class="login-sub">Visualize suas coleções de NFTs, saldo e transações.</p>
+      </div>
+      <div class="igroup">
+        <div class="ilabel">Xaman API Key</div>
+        <input type="text" class="ifield" id="apikey" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" />
+        <div class="inote">Obtenha em <a href="https://apps.xumm.dev" target="_blank">apps.xumm.dev</a> · Nunca insira sua API Secret aqui</div>
+      </div>
+      <button class="btn btn-p" id="btn-login" onclick="doLogin()">
+        <span id="btn-txt">Entrar com Xaman</span>
+      </button>
+      <div id="err"></div>
+    </div>
+
+    <!-- WALLET -->
+    <div id="s-wallet">
+      <div class="w-header">
+        <div class="w-id">
+          <div class="avatar" id="av">?</div>
+          <div>
+            <div class="w-name" id="wname">—</div>
+            <div class="w-addr" id="waddr" onclick="copyAddr()" title="Clique para copiar">—</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-s" onclick="reload()">↻ Atualizar</button>
+          <button class="btn btn-d" onclick="doLogout()">Sair</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Stats -->
+      <div>
+        <div class="sec-title">Saldo & Conta</div>
+        <div class="stats">
+          <div class="scard"><div class="slabel">Saldo XRP</div><div class="sval" id="st-bal"><span class="sk"></span></div><div class="ssub" id="st-avail"></div></div>
+          <div class="scard"><div class="slabel">Reserva</div><div class="sval" id="st-res"><span class="sk"></span></div><div class="ssub">Base + por objeto</div></div>
+          <div class="scard"><div class="slabel">Golden Phoenix</div><div class="sval" id="st-gp"><span class="sk"></span></div><div class="ssub">NFTs</div></div>
+          <div class="scard"><div class="slabel">1 / 1</div><div class="sval" id="st-oo"><span class="sk"></span></div><div class="ssub">NFTs</div></div>
+        </div>
+      </div>
+
+      <!-- NFT Gallery -->
+      <div>
+        <div class="sec-title">Minhas Coleções</div>
+        <div class="filter-bar" id="filter-bar">
+          <button class="filter-btn active" onclick="setFilter('all', this)">Todas</button>
+          <button class="filter-btn gold" onclick="setFilter('gp', this)">🔥 Golden Phoenix</button>
+          <button class="filter-btn" onclick="setFilter('oo', this)">💎 1/1</button>
+          <button class="filter-btn" onclick="setFilter('other', this)">Outros</button>
+        </div>
+        <div class="nft-count" id="nft-count"></div>
+        <div class="nft-grid" id="nft-grid">
+          <div class="empty">Carregando NFTs...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-img" id="m-img"></div>
+    <div class="modal-name" id="m-name"></div>
+    <div id="m-rows"></div>
+    <a class="modal-link" id="m-link" href="#" target="_blank">Ver no Bithomp ↗</a>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+  // ── Coleções conhecidas (Issuer address → nome) ────────────────────────────
+  const COLLECTIONS = {
+    'rKeSdAsY5zTEP2MpWAxzN6FQgVavNa2eW6': { name: 'Golden Phoenix', type: 'gp', badge: 'gp', emoji: '🔥' },
+    // 1/1: issuer é o próprio dono (endereço da carteira) — detectamos dinamicamente
+  };
+  let SELF_ADDRESS = null; // será preenchido após login
+
+  function getCollectionType(nft) {
+    if (COLLECTIONS[nft.Issuer]) return COLLECTIONS[nft.Issuer].type;
+    if (nft.Issuer === SELF_ADDRESS) return 'oo'; // mintado por si mesmo = 1/1
+    return 'other';
+  }
+
+  function getCollectionName(nft) {
+    if (COLLECTIONS[nft.Issuer]) return COLLECTIONS[nft.Issuer].name;
+    if (nft.Issuer === SELF_ADDRESS) return '1/1';
+    return 'Outro';
+  }
+
+  // ── Estado ────────────────────────────────────────────────────────────────
+  let xumm = null, allNFTs = [], currentFilter = 'all';
+
+  // ── WebSocket XRPL ────────────────────────────────────────────────────────
+  function xrpl(cmd) {
+    return new Promise((res, rej) => {
+      const ws = new WebSocket('wss://xrplcluster.com');
+      const t = setTimeout(() => { ws.close(); rej(new Error('timeout')); }, 12000);
+      ws.onopen = () => ws.send(JSON.stringify({ id: 1, ...cmd }));
+      ws.onmessage = e => {
+        clearTimeout(t); ws.close();
+        const d = JSON.parse(e.data);
+        if (d.result?.error) rej(new Error(d.result.error));
+        else res(d.result);
+      };
+      ws.onerror = () => { clearTimeout(t); rej(new Error('ws error')); };
+    });
+  }
+
+  // ── Login ─────────────────────────────────────────────────────────────────
+  async function doLogin() {
+    const key = document.getElementById('apikey').value.trim();
+    const errEl = document.getElementById('err');
+    errEl.style.display = 'none';
+    if (!key || !/^[0-9a-f-]{36}$/i.test(key)) {
+      errEl.textContent = '⚠ Insira uma API Key válida (UUID)';
+      errEl.style.display = 'block'; return;
+    }
+    sessionStorage.setItem('xk', key);
+    const btn = document.getElementById('btn-login');
+    btn.disabled = true;
+    document.getElementById('btn-txt').innerHTML = '<span class="spinner"></span> Conectando...';
+    try {
+      xumm = new Xumm(key);
+      xumm.on('error', e => { showErr('Erro: ' + (e?.message||'tente novamente')); resetBtn(); });
+      xumm.on('success', async () => { await showWallet(); });
+      xumm.on('logout', () => showLogin());
+      xumm.authorize();
+    } catch(e) { showErr('Falha: ' + e.message); resetBtn(); }
+  }
+
+  function resetBtn() {
+    document.getElementById('btn-login').disabled = false;
+    document.getElementById('btn-txt').textContent = 'Entrar com Xaman';
+  }
+  function showErr(m) { const e = document.getElementById('err'); e.textContent = m; e.style.display = 'block'; }
+
+  // ── Wallet ────────────────────────────────────────────────────────────────
+  async function showWallet() {
+    const [account, name, avatar] = await Promise.all([xumm.user.account, xumm.user.name, xumm.user.avatar]);
+    SELF_ADDRESS = account;
+    document.getElementById('s-login').style.display = 'none';
+    document.getElementById('s-wallet').style.display = 'flex';
+    document.getElementById('dot').classList.add('on');
+    document.getElementById('status').textContent = 'Conectado';
+    document.getElementById('wname').textContent = name || 'Usuário Xaman';
+    document.getElementById('waddr').textContent = account;
+    const av = document.getElementById('av');
+    if (avatar) av.innerHTML = `<img src="${avatar}" />`;
+    else av.textContent = (account||'X')[1]?.toUpperCase()||'X';
+    await loadData(account);
+  }
+
+  async function loadData(address) {
+    try {
+      const [info, nftsResult] = await Promise.all([
+        xrpl({ command: 'account_info', account: address, ledger_index: 'validated' }),
+        xrpl({ command: 'account_nfts', account: address, limit: 400 })
+      ]);
+      renderStats(info, nftsResult);
+      allNFTs = nftsResult?.account_nfts || [];
+      currentFilter = 'all';
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.filter-btn').classList.add('active');
+      await renderNFTs();
+    } catch(e) { showToast('❌ ' + e.message); }
+  }
+
+  async function reload() { if (SELF_ADDRESS) { await loadData(SELF_ADDRESS); showToast('✓ Atualizado'); } }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+  function renderStats(info, nfts) {
+    const acc = info?.account_data; if (!acc) return;
+    const bal = parseInt(acc.Balance||'0') / 1e6;
+    const owner = acc.OwnerCount || 0;
+    const reserve = 10 + owner * 2;
+    const avail = Math.max(0, bal - reserve);
+    document.getElementById('st-bal').innerHTML = `${bal.toLocaleString('pt-BR',{maximumFractionDigits:4})}<span class="sunit">XRP</span>`;
+    document.getElementById('st-avail').textContent = `≈ ${avail.toFixed(2)} disponível`;
+    document.getElementById('st-res').innerHTML = `${reserve}<span class="sunit">XRP</span>`;
+
+    const list = nfts?.account_nfts || [];
+    const gpCount = list.filter(n => COLLECTIONS[n.Issuer]?.type === 'gp').length;
+    const ooCount = list.filter(n => n.Issuer === SELF_ADDRESS).length;
+    document.getElementById('st-gp').textContent = gpCount;
+    document.getElementById('st-oo').textContent = ooCount;
+  }
+
+  // ── NFT Filter ────────────────────────────────────────────────────────────
+  function setFilter(type, btn) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderNFTs();
+  }
+
+  // ── NFT Render ────────────────────────────────────────────────────────────
+  async function renderNFTs() {
+    const grid = document.getElementById('nft-grid');
+    const countEl = document.getElementById('nft-count');
+
+    let filtered = allNFTs;
+    if (currentFilter !== 'all') {
+      filtered = allNFTs.filter(n => getCollectionType(n) === currentFilter);
+    }
+
+    if (!filtered.length) {
+      grid.innerHTML = '<div class="empty">Nenhum NFT nesta coleção</div>';
+      countEl.textContent = '';
+      return;
+    }
+
+    countEl.textContent = `${filtered.length} NFT${filtered.length !== 1 ? 's' : ''}`;
+
+    grid.innerHTML = filtered.map((nft, i) => {
+      const type = getCollectionType(nft);
+      const colName = getCollectionName(nft);
+      const badgeHtml = type === 'gp'
+        ? `<span class="nft-badge gp">Golden Phoenix</span>`
+        : type === 'oo'
+        ? `<span class="nft-badge oo">1/1</span>`
+        : '';
+      return `
+        <div class="nft-card ${type === 'gp' ? 'gold' : ''}" onclick="openModal('${nft.NFTokenID}')">
+          <div class="nft-img" id="img-${nft.NFTokenID.slice(-8)}">
+            <div class="loading-img"><span class="spinner"></span></div>
+          </div>
+          <div class="nft-info">
+            <div class="nft-name" id="name-${nft.NFTokenID.slice(-8)}">#${nft.nft_serial ?? '?'}</div>
+            <div class="nft-col">${colName}</div>
+            ${badgeHtml}
+          </div>
+        </div>`;
+    }).join('');
+
+    // Guarda referência
+    window._nftMap = {};
+    filtered.forEach(n => { window._nftMap[n.NFTokenID] = n; });
+
+    // Carrega imagens em paralelo via xrplmeta.org
+    await Promise.allSettled(filtered.map(nft => loadNFTImage(nft)));
+  }
+
+  // ── Image Loading ─────────────────────────────────────────────────────────
+  async function loadNFTImage(nft) {
+    const id = nft.NFTokenID;
+    const shortId = id.slice(-8);
+    const imgEl = document.getElementById(`img-${shortId}`);
+    const nameEl = document.getElementById(`name-${shortId}`);
+
+    // Tenta xrplmeta.org primeiro (tem cache de IPFS e resolve metadata)
+    try {
+      const res = await fetch(`https://api.xrplmeta.org/token/${id}`, {
+        signal: AbortSignal.timeout(6000)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const img = data?.meta?.image || data?.image || '';
+        const name = data?.meta?.name || data?.name || '';
+        if (img && imgEl) {
+          imgEl.innerHTML = `<img src="${img}" onerror="this.parentElement.innerHTML='🖼️'" loading="lazy" />`;
+        } else if (imgEl) {
+          imgEl.innerHTML = '🖼️';
+        }
+        if (name && nameEl) nameEl.textContent = name;
+        if (window._nftMap[id]) window._nftMap[id]._meta = { name, image: img, description: data?.meta?.description || data?.description || '' };
+        return;
+      }
+    } catch {}
+
+    // Fallback: tenta URI direto
+    try {
+      if (!nft.URI) { if (imgEl) imgEl.innerHTML = '🖼️'; return; }
+      let uri = hexToStr(nft.URI);
+      if (uri.startsWith('ipfs://')) uri = 'https://cloudflare-ipfs.com/ipfs/' + uri.slice(7);
+      if (!uri.startsWith('http')) { if (imgEl) imgEl.innerHTML = '🖼️'; return; }
+
+      const res = await fetch(uri, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) { if (imgEl) imgEl.innerHTML = '🖼️'; return; }
+      const meta = await res.json();
+      let img = meta.image || meta.image_url || '';
+      if (img.startsWith('ipfs://')) img = 'https://cloudflare-ipfs.com/ipfs/' + img.slice(7);
+      const name = meta.name || meta.title || '';
+      if (img && imgEl) imgEl.innerHTML = `<img src="${img}" onerror="this.parentElement.innerHTML='🖼️'" loading="lazy" />`;
+      else if (imgEl) imgEl.innerHTML = '🖼️';
+      if (name && nameEl) nameEl.textContent = name;
+      if (window._nftMap[id]) window._nftMap[id]._meta = { name, image: img, description: meta.description||'' };
+    } catch {
+      if (imgEl) imgEl.innerHTML = '🖼️';
+    }
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────────────────
+  function openModal(nftId) {
+    const nft = window._nftMap?.[nftId]; if (!nft) return;
+    const meta = nft._meta || {};
+    const name = meta.name || ('#' + (nft.nft_serial ?? '?'));
+    const colName = getCollectionName(nft);
+
+    document.getElementById('m-name').textContent = name;
+    const mi = document.getElementById('m-img');
+    mi.innerHTML = meta.image
+      ? `<img src="${meta.image}" onerror="this.parentElement.innerHTML='🖼️'" />`
+      : '🖼️';
+
+    const rows = [
+      ['Coleção', colName],
+      ['Serial', '#' + (nft.nft_serial ?? '–')],
+      ['Emissor', nft.Issuer ? nft.Issuer.slice(0,16)+'…' : '–'],
+      ['Transferível', (nft.Flags & 8) ? 'Sim ✓' : 'Não'],
+      ['Transferência', nft.TransferFee ? (nft.TransferFee/1000).toFixed(2)+'%' : '0%'],
+      ['NFToken ID', nftId.slice(0,20)+'…'],
+    ];
+    if (meta.description) rows.push(['Descrição', meta.description.slice(0,120)+(meta.description.length>120?'…':'')]);
+
+    document.getElementById('m-rows').innerHTML = rows.map(([k,v]) =>
+      `<div class="modal-row"><span class="mkey">${k}</span><span class="mval">${esc(String(v))}</span></div>`
+    ).join('');
+
+    document.getElementById('m-link').href = `https://bithomp.com/nft/${nftId}`;
+    document.getElementById('modal').classList.add('open');
+  }
+  function closeModal() { document.getElementById('modal').classList.remove('open'); }
+  document.getElementById('modal').addEventListener('click', e => { if (e.target.id==='modal') closeModal(); });
+
+  // ── Utils ─────────────────────────────────────────────────────────────────
+  function hexToStr(hex) {
+    try {
+      const c = hex.replace(/00+$/, '');
+      let r = '';
+      for (let i = 0; i < c.length; i+=2) r += String.fromCharCode(parseInt(c.substr(i,2),16));
+      return r;
+    } catch { return hex; }
+  }
+  function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function copyAddr() {
+    if (!SELF_ADDRESS) return;
+    navigator.clipboard.writeText(SELF_ADDRESS).then(() => showToast('✓ Endereço copiado'));
+  }
+  function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+  function showLogin() { SELF_ADDRESS=null; document.getElementById('s-login').style.display='flex'; document.getElementById('s-wallet').style.display='none'; document.getElementById('dot').classList.remove('on'); document.getElementById('status').textContent='Desconectado'; resetBtn(); }
+  function doLogout() { xumm?.logout(); showLogin(); }
+
+  const saved = sessionStorage.getItem('xk');
+  if (saved) document.getElementById('apikey').value = saved;
+  document.getElementById('apikey').addEventListener('input', function(){ sessionStorage.setItem('xk', this.value); });
+</script>
+</body>
+</html>
