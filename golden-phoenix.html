@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Golden Phoenix — XRPL NFT Collection</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=EB+Garamond:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<script src="https://xumm.app/assets/cdn/xumm.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080500;--surface:#110D05;--surface2:#1A1208;
+  --border:#2A1F08;--gold:#F0B429;--gold-dark:#A07820;
+  --gold-glow:rgba(240,180,41,0.12);--text:#F5EDD8;--muted:#6B5C3E;--muted2:#8B7850;
+  --font-d:'Cormorant Garamond',serif;--font-b:'EB Garamond',serif;--font-m:'Space Mono',monospace;
+}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.5}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:100;background:rgba(8,5,0,.93);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-star{font-size:1.6rem;filter:drop-shadow(0 0 8px var(--gold))}
+.logo-text{font-family:var(--font-d);font-size:1.3rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:linear-gradient(135deg,var(--gold),#FFD87A,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-sub{font-family:var(--font-m);font-size:.55rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-top:2px}
+nav{display:flex}
+.nav-tab{padding:0 22px;height:64px;display:flex;align-items:center;font-family:var(--font-m);font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;transition:all .2s}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.header-right{display:flex;align-items:center;gap:14px}
+#sym-ind{display:none;align-items:center;gap:8px;padding:6px 12px;background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.3);border-radius:4px;font-family:var(--font-m);font-size:.65rem;color:var(--gold);animation:spulse 2s ease-in-out infinite}
+@keyframes spulse{0%,100%{border-color:rgba(240,180,41,.3)}50%{border-color:rgba(240,180,41,.7);box-shadow:0 0 12px rgba(240,180,41,.2)}}
+#sym-ind.on{display:flex}
+#user-pill{display:none;align-items:center;gap:10px;padding:6px 14px 6px 6px;background:var(--surface);border:1px solid var(--border);border-radius:999px}
+#user-pill.on{display:flex}
+.uav{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold-dark),var(--gold));display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#000;overflow:hidden;flex-shrink:0}
+.uav img{width:100%;height:100%;object-fit:cover}
+.uaddr{font-family:var(--font-m);font-size:.65rem;color:var(--muted2)}
+.ulvl{font-family:var(--font-m);font-size:.55rem;padding:2px 6px;border-radius:3px;background:rgba(240,180,41,.15);color:var(--gold)}
+#connect-btn{padding:8px 20px;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:var(--font-m);font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;transition:all .2s;border-radius:3px}
+#connect-btn:hover{background:var(--gold-glow);box-shadow:0 0 16px var(--gold-glow)}
+#connect-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* MAIN */
+main{flex:1;padding:40px 32px;max-width:1200px;width:100%;margin:0 auto}
+.tab-content{display:none}
+.tab-content.active{display:block;animation:fin .3s ease}
+@keyframes fin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.gap{margin-bottom:48px}
+.sec-hdr{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.sec-hdr h2{font-family:var(--font-d);font-size:1.6rem;font-weight:600;letter-spacing:.04em}
+.sec-div{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
+.sec-icon{font-size:1.1rem;opacity:.7}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:40px}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:22px 18px;position:relative;overflow:hidden;transition:border-color .2s,transform .2s}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.25}
+.sc:hover{border-color:var(--gold-dark);transform:translateY(-2px)}
+.sc-label{font-family:var(--font-m);font-size:.58rem;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);margin-bottom:10px}
+.sc-val{font-family:var(--font-d);font-size:2rem;font-weight:700;color:var(--gold);line-height:1}
+.sc-unit{font-size:.9rem;color:var(--muted2);margin-left:3px;font-weight:400}
+.sc-sub{font-family:var(--font-m);font-size:.58rem;color:var(--muted);margin-top:6px}
+
+/* FEED */
+.feed-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.ff{padding:5px 13px;border-radius:3px;font-family:var(--font-m);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .2s}
+.ff:hover{border-color:var(--gold-dark);color:var(--text)}
+.ff.active{background:rgba(240,180,41,.1);border-color:var(--gold);color:var(--gold)}
+.feed-list{display:flex;flex-direction:column;gap:2px}
+.fi{display:flex;align-items:center;gap:14px;padding:13px 16px;background:var(--surface);border:1px solid transparent;border-radius:3px;transition:border-color .15s}
+.fi:hover{border-color:var(--border)}
+.fi-icon{width:34px;height:34px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
+.fi-icon.mint{background:rgba(76,175,80,.1);border:1px solid rgba(76,175,80,.2)}
+.fi-icon.burn{background:rgba(204,68,34,.1);border:1px solid rgba(204,68,34,.2)}
+.fi-icon.sale{background:rgba(240,180,41,.1);border:1px solid rgba(240,180,41,.2)}
+.fi-icon.listing{background:rgba(100,150,255,.1);border:1px solid rgba(100,150,255,.2)}
+.fi-icon.offer{background:rgba(200,100,255,.1);border:1px solid rgba(200,100,255,.2)}
+.fi-info{flex:1;min-width:0}
+.fi-title{font-size:.92rem;font-weight:500}
+.fi-meta{font-family:var(--font-m);font-size:.58rem;color:var(--muted);margin-top:3px}
+.fi-price{font-family:var(--font-m);font-size:.78rem;color:var(--gold);text-align:right}
+.fi-time{font-family:var(--font-m);font-size:.58rem;color:var(--muted);text-align:right;margin-top:3px}
+
+/* SYMBOLS */
+.sym-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:16px}
+.sym-card{background:var(--surface);border:1px solid rgba(240,180,41,.25);border-radius:4px;overflow:hidden;cursor:pointer;position:relative;transition:border-color .2s,transform .2s}
+.sym-card:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 8px 24px rgba(240,180,41,.1)}
+.sym-img{width:100%;aspect-ratio:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:2rem;overflow:hidden}
+.sym-img img{width:100%;height:100%;object-fit:cover}
+.sym-badge{position:absolute;top:8px;right:8px;background:rgba(8,5,0,.88);border:1px solid var(--gold);border-radius:3px;padding:3px 8px;font-family:var(--font-m);font-size:.62rem;color:var(--gold);animation:spulse 2s ease-in-out infinite}
+.sym-info{padding:11px 12px}
+.sym-name{font-family:var(--font-d);font-size:.98rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sym-val{font-family:var(--font-m);font-size:.62rem;color:var(--gold);margin-top:3px}
+
+/* DEV NOTE */
+.dev-note{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:4px;padding:30px 34px}
+.dev-note-date{font-family:var(--font-m);font-size:.62rem;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:14px}
+.dev-note-text{font-size:1.05rem;line-height:1.8;font-style:italic}
+.dev-note-sig{font-family:var(--font-d);font-size:1.05rem;color:var(--muted2);margin-top:18px}
+
+/* JOURNAL */
+.journal-hdr{display:flex;align-items:baseline;gap:14px;margin-bottom:18px}
+.journal-date{font-family:var(--font-d);font-size:1.7rem;font-weight:300;font-style:italic;color:var(--muted2)}
+.journal-ed{font-family:var(--font-m);font-size:.58rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase}
+.journal-list{display:flex;flex-direction:column;gap:10px}
+.ji{display:flex;align-items:flex-start;gap:14px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:3px}
+.ji-time{font-family:var(--font-m);font-size:.62rem;color:var(--muted);flex-shrink:0;min-width:44px;padding-top:2px}
+.ji-text{font-size:.92rem;line-height:1.5}
+
+/* LEVEL */
+.lvl-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:34px 38px;margin-bottom:28px;display:flex;align-items:center;gap:36px;position:relative;overflow:hidden}
+.lvl-card::after{content:'';position:absolute;top:-60px;right:-60px;width:180px;height:180px;background:radial-gradient(circle,var(--gold-glow),transparent 70%);pointer-events:none}
+.lvl-badge{text-align:center;flex-shrink:0}
+.lvl-icon{font-size:3.2rem;display:block;margin-bottom:6px}
+.lvl-num{font-family:var(--font-m);font-size:.58rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase}
+.lvl-name{font-family:var(--font-d);font-size:1.7rem;font-weight:700;color:var(--gold);line-height:1.1}
+.lvl-desc{font-size:.92rem;color:var(--muted2);margin-top:7px;line-height:1.6}
+.lvl-prog-wrap{margin-top:18px}
+.lvl-prog-labels{display:flex;justify-content:space-between;font-family:var(--font-m);font-size:.62rem;color:var(--muted);margin-bottom:7px}
+.lvl-prog-bar{height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+.lvl-prog-fill{height:100%;background:linear-gradient(90deg,var(--gold-dark),var(--gold));border-radius:2px;transition:width .8s ease}
+.lvl-next{font-family:var(--font-m);font-size:.62rem;color:var(--muted2);margin-top:7px}
+
+/* NFT GALLERY */
+.nft-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px}
+.nft-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .2s;position:relative}
+.nft-card:hover{border-color:var(--gold-dark);transform:translateY(-3px)}
+.nft-card.has-sym{border-color:rgba(240,180,41,.4);animation:spulse 3s ease-in-out infinite}
+.nft-img{width:100%;aspect-ratio:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:2rem;overflow:hidden}
+.nft-img img{width:100%;height:100%;object-fit:cover}
+.nft-sym-dot{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:rgba(8,5,0,.9);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:.7rem}
+.nft-info{padding:10px 12px}
+.nft-name{font-family:var(--font-d);font-size:.95rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nft-serial{font-family:var(--font-m);font-size:.58rem;color:var(--muted);margin-top:3px}
+
+/* PERSONAL STATS */
+.pstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:28px}
+.ps{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:18px}
+.ps-label{font-family:var(--font-m);font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.15em;margin-bottom:7px}
+.ps-val{font-family:var(--font-d);font-size:1.5rem;font-weight:700;color:var(--gold)}
+.ps-sub{font-family:var(--font-m);font-size:.58rem;color:var(--muted);margin-top:3px}
+
+/* LOCKED */
+.locked{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;text-align:center;gap:18px}
+.locked-icon{font-size:2.8rem;opacity:.35}
+.locked h3{font-family:var(--font-d);font-size:1.7rem;color:var(--muted2)}
+.locked p{font-family:var(--font-m);font-size:.68rem;color:var(--muted);max-width:300px;line-height:1.9}
+
+/* MODAL */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:200;align-items:center;justify-content:center;padding:24px}
+#modal.open{display:flex;animation:fin .2s ease}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:6px;max-width:460px;width:100%;max-height:90vh;overflow-y:auto;position:relative}
+.modal-img{width:100%;aspect-ratio:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:4rem;overflow:hidden}
+.modal-img img{width:100%;height:100%;object-fit:cover}
+.modal-body{padding:26px}
+.modal-name{font-family:var(--font-d);font-size:1.5rem;font-weight:700;margin-bottom:5px}
+.modal-col{font-family:var(--font-m);font-size:.62rem;color:var(--gold);letter-spacing:.1em;margin-bottom:18px}
+.modal-traits{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:18px}
+.trait{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:9px 11px}
+.trait.sym{border-color:rgba(240,180,41,.4);background:rgba(240,180,41,.05)}
+.trait-type{font-family:var(--font-m);font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+.trait-val{font-size:.88rem;font-weight:500}
+.modal-close{position:absolute;top:14px;right:14px;background:rgba(8,5,0,.85);border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;transition:border-color .2s}
+.modal-close:hover{border-color:var(--gold-dark);color:var(--text)}
+.modal-link{display:block;text-align:center;padding:9px;border:1px solid var(--border);border-radius:3px;font-family:var(--font-m);font-size:.62rem;color:var(--muted2);text-decoration:none;transition:all .2s}
+.modal-link:hover{border-color:var(--gold-dark);color:var(--gold)}
+
+/* MISC */
+#toast{position:fixed;bottom:22px;right:22px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:11px 16px;font-family:var(--font-m);font-size:.68rem;transform:translateY(60px);opacity:0;transition:all .3s;z-index:999}
+#toast.show{transform:translateY(0);opacity:1}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:44px;font-family:var(--font-m);font-size:.72rem;color:var(--muted);letter-spacing:.1em}
+.empty.col{grid-column:1/-1}
+@media(max-width:700px){header{padding:0 14px}nav{display:none}main{padding:22px 14px}.lvl-card{flex-direction:column;gap:20px;padding:22px}.stats-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="logo">
+    <div class="logo-star">★</div>
+    <div>
+      <div class="logo-text">Golden Phoenix</div>
+      <div class="logo-sub">XRPL Collection</div>
+    </div>
+  </div>
+  <nav>
+    <button class="nav-tab active" onclick="switchTab('dashboard',this)">Dashboard</button>
+    <button class="nav-tab" onclick="switchTab('wallet',this)">My Wallet 🔒</button>
+  </nav>
+  <div class="header-right">
+    <div id="sym-ind"><span>⚡</span><span id="sym-count">0</span> SYMBOL<span id="sym-plural"></span></div>
+    <div id="user-pill">
+      <div class="uav" id="uav">?</div>
+      <div>
+        <div class="uaddr" id="uaddr">—</div>
+        <div class="ulvl" id="ulvl">—</div>
+      </div>
+    </div>
+    <button id="connect-btn" onclick="doConnect()">Connect Wallet</button>
+  </div>
+</header>
+
+<main>
+
+<!-- DASHBOARD -->
+<div id="tab-dashboard" class="tab-content active">
+
+  <div class="gap">
+    <div class="sec-hdr"><span class="sec-icon">🔥</span><h2>Collection Stats</h2><div class="sec-div"></div><span style="font-family:var(--font-m);font-size:.58rem;color:var(--muted)" id="stats-upd"></span></div>
+    <div class="stats-grid">
+      <div class="sc"><div class="sc-label">Total Minted</div><div class="sc-val" id="st-minted"><span class="spinner"></span></div></div>
+      <div class="sc"><div class="sc-label">Total Burned</div><div class="sc-val" id="st-burned"><span class="spinner"></span></div></div>
+      <div class="sc"><div class="sc-label">Unique Holders</div><div class="sc-val" id="st-holders"><span class="spinner"></span></div></div>
+      <div class="sc"><div class="sc-label">Floor Price</div><div class="sc-val" id="st-floor"><span class="spinner"></span></div><div class="sc-sub" id="st-floor-sub"></div></div>
+      <div class="sc"><div class="sc-label">Total Volume</div><div class="sc-val" id="st-volume"><span class="spinner"></span></div><div class="sc-sub">XRP all time</div></div>
+    </div>
+  </div>
+
+  <div class="gap">
+    <div class="sec-hdr"><span class="sec-icon">⚡</span><h2>Activity Feed</h2><div class="sec-div"></div></div>
+    <div class="feed-filters">
+      <button class="ff active" onclick="setFeed('all',this)">All</button>
+      <button class="ff" onclick="setFeed('mint',this)">Mint</button>
+      <button class="ff" onclick="setFeed('burn',this)">Burn</button>
+      <button class="ff" onclick="setFeed('sale',this)">Sale</button>
+      <button class="ff" onclick="setFeed('listing',this)">Listing</button>
+      <button class="ff" onclick="setFeed('offer',this)">Offer</button>
+    </div>
+    <div class="feed-list" id="feed-list"><div class="empty"><span class="spinner"></span> Loading...</div></div>
+  </div>
+
+  <div class="gap">
+    <div class="sec-hdr"><span class="sec-icon">⚡</span><h2>Symbol NFTs — Bounty Holders</h2><div class="sec-div"></div></div>
+    <div class="sym-grid" id="sym-grid"><div class="empty col"><span class="spinner"></span> Loading...</div></div>
+  </div>
+
+  <div class="gap">
+    <div class="sec-hdr"><span class="sec-icon">📜</span><h2>Dev Note</h2><div class="sec-div"></div></div>
+    <div class="dev-note">
+      <div class="dev-note-date" id="dn-date">—</div>
+      <div class="dev-note-text" id="dn-text">Loading note from the developers...</div>
+      <div class="dev-note-sig">— Golden Phoenix Team</div>
+    </div>
+  </div>
+
+  <div class="gap">
+    <div class="sec-hdr"><span class="sec-icon">📰</span><h2>Golden Phoenix Journal</h2><div class="sec-div"></div></div>
+    <div class="journal-hdr"><div class="journal-date" id="jdate">—</div><div class="journal-ed">Daily Edition</div></div>
+    <div class="journal-list" id="journal-list"><div class="empty"><span class="spinner"></span> Compiling today's events...</div></div>
+  </div>
+
+</div>
+
+<!-- WALLET -->
+<div id="tab-wallet" class="tab-content">
+  <div id="wallet-locked" class="locked">
+    <div class="locked-icon">🔒</div>
+    <h3>Connect Your Wallet</h3>
+    <p>Sign in with Xaman to view your Golden Phoenix holdings and level status.</p>
+  </div>
+  <div id="wallet-content" style="display:none">
+
+    <div class="gap">
+      <div class="sec-hdr"><span class="sec-icon">👁</span><h2>Your Level</h2><div class="sec-div"></div></div>
+      <div class="lvl-card">
+        <div class="lvl-badge">
+          <span class="lvl-icon" id="lvl-icon">🌑</span>
+          <div class="lvl-num" id="lvl-num">Level 0</div>
+        </div>
+        <div style="flex:1">
+          <div class="lvl-name" id="lvl-name">In the Cave</div>
+          <div class="lvl-desc" id="lvl-desc">You hold no Golden Phoenix NFTs yet. The flame awaits you.</div>
+          <div id="lvl-prog"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gap">
+      <div class="sec-hdr"><span class="sec-icon">📊</span><h2>Your Stats</h2><div class="sec-div"></div></div>
+      <div class="pstats">
+        <div class="ps"><div class="ps-label">XRP Balance</div><div class="ps-val" id="ps-bal">—</div><div class="ps-sub" id="ps-bal-sub"></div></div>
+        <div class="ps"><div class="ps-label">Golden Phoenix</div><div class="ps-val" id="ps-gp">—</div><div class="ps-sub">NFTs in wallet</div></div>
+        <div class="ps"><div class="ps-label">Est. Value</div><div class="ps-val" id="ps-val">—</div><div class="ps-sub">qty × floor price</div></div>
+        <div class="ps"><div class="ps-label">Symbol NFTs</div><div class="ps-val" id="ps-sym">—</div><div class="ps-sub">bounty holders</div></div>
+      </div>
+    </div>
+
+    <div class="gap">
+      <div class="sec-hdr"><span class="sec-icon">🖼</span><h2>My Golden Phoenix</h2><div class="sec-div"></div></div>
+      <div class="nft-grid" id="wallet-grid"><div class="empty col">Loading your NFTs...</div></div>
+    </div>
+
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- MODAL -->
+<div id="modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-img" id="m-img"></div>
+    <div class="modal-body">
+      <div class="modal-name" id="m-name"></div>
+      <div class="modal-col">GOLDEN PHOENIX COLLECTION</div>
+      <div class="modal-traits" id="m-traits"></div>
+      <a class="modal-link" id="m-link" href="#" target="_blank">View on Bithomp ↗</a>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const XAMAN_KEY   = 'YOUR_XAMAN_API_KEY';
+const GP_ISSUER   = 'rKeSdAsY5zTEP2MpWAxzN6FQgVavNa2eW6';
+const GP_TAXON    = 0;
+const BITHOMP_KEY = '2d73696f-3453-4b1b-893a-51a0c0e6e2a6';
+const SHEETS_ID   = '1sNaljYtEBwe-gvD1u7xgk8sd3j0eZE53ljoE0vO77Zk';
+const SHEETS_URL  = `https://docs.google.com/spreadsheets/d/${SHEETS_ID}/gviz/tq?tqx=out:json&sheet=nota-devs`;
+const BITHOMP_URL = 'https://bithomp.com/nft/';
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let xumm=null, userAddress=null, userGPNFTs=[], feedEvents=[], feedFilter='all', floorPrice=0, nftMap={};
+
+// ── XRPL WS ───────────────────────────────────────────────────────────────────
+function xrpl(cmd){
+  return new Promise((res,rej)=>{
+    const ws=new WebSocket('wss://xrplcluster.com');
+    const t=setTimeout(()=>{ws.close();rej(new Error('timeout'));},14000);
+    ws.onopen=()=>ws.send(JSON.stringify({id:1,...cmd}));
+    ws.onmessage=e=>{clearTimeout(t);ws.close();const d=JSON.parse(e.data);if(d.result?.error)rej(new Error(d.result.error));else res(d.result);};
+    ws.onerror=()=>{clearTimeout(t);rej(new Error('ws error'));};
+  });
+}
+
+// ── Bithomp helper ────────────────────────────────────────────────────────────
+function bFetch(path){
+  return fetch('https://bithomp.com/api/v2/'+path,{headers:{'x-bithomp-token':BITHOMP_KEY},signal:AbortSignal.timeout(8000)}).then(r=>r.ok?r.json():null).catch(()=>null);
+}
+
+// ── TAB ───────────────────────────────────────────────────────────────────────
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── CONNECT ───────────────────────────────────────────────────────────────────
+async function doConnect(){
+  const btn=document.getElementById('connect-btn');
+  btn.disabled=true;btn.textContent='Connecting...';
+  try{
+    xumm=new Xumm(XAMAN_KEY);
+    xumm.on('error',e=>{toast('Error: '+(e?.message||'try again'));btn.disabled=false;btn.textContent='Connect Wallet';});
+    xumm.on('success',async()=>await onLogin());
+    xumm.on('logout',()=>onLogout());
+    xumm.authorize();
+  }catch(e){toast('Failed: '+e.message);btn.disabled=false;btn.textContent='Connect Wallet';}
+}
+
+async function onLogin(){
+  const [account,name,avatar]=await Promise.all([xumm.user.account,xumm.user.name,xumm.user.avatar]);
+  userAddress=account;
+  document.getElementById('connect-btn').style.display='none';
+  document.getElementById('user-pill').classList.add('on');
+  document.getElementById('uaddr').textContent=account.slice(0,6)+'…'+account.slice(-4);
+  const av=document.getElementById('uav');
+  if(avatar)av.innerHTML=`<img src="${avatar}"/>`;else av.textContent=(account[1]||'X').toUpperCase();
+  document.getElementById('wallet-locked').style.display='none';
+  document.getElementById('wallet-content').style.display='block';
+  await loadWallet();
+}
+
+function onLogout(){
+  userAddress=null;userGPNFTs=[];
+  document.getElementById('connect-btn').style.display='';
+  document.getElementById('connect-btn').disabled=false;
+  document.getElementById('connect-btn').textContent='Connect Wallet';
+  document.getElementById('user-pill').classList.remove('on');
+  document.getElementById('sym-ind').classList.remove('on');
+  document.getElementById('wallet-locked').style.display='';
+  document.getElementById('wallet-content').style.display='none';
+}
+
+// ── WALLET ────────────────────────────────────────────────────────────────────
+async function loadWallet(){
+  try{
+    const [info,nfts]=await Promise.all([
+      xrpl({command:'account_info',account:userAddress,ledger_index:'validated'}),
+      xrpl({command:'account_nfts',account:userAddress,limit:400})
+    ]);
+    const allNFTs=nfts?.account_nfts||[];
+    userGPNFTs=allNFTs.filter(n=>n.Issuer===GP_ISSUER&&n.NFTokenTaxon===GP_TAXON);
+
+    renderLevel(userGPNFTs.length);
+    renderPStats(info,userGPNFTs);
+    // Render gallery immediately with placeholders
+    renderGallery(userGPNFTs);
+    // Load metadata async
+    await loadMeta(userGPNFTs);
+    // Re-render with names + symbol detection
+    renderGallery(userGPNFTs);
+    // Update sym stats
+    const syms=userGPNFTs.filter(n=>n._meta?.hasSymbol);
+    document.getElementById('ps-sym').textContent=syms.length;
+    if(syms.length>0){
+      document.getElementById('sym-ind').classList.add('on');
+      document.getElementById('sym-count').textContent=syms.length;
+      document.getElementById('sym-plural').textContent=syms.length>1?'S':'';
+    }
+  }catch(e){toast('Error: '+e.message);}
+}
+
+// ── METADATA ──────────────────────────────────────────────────────────────────
+async function loadMeta(nfts){
+  // First: set quick images from URI CID
+  nfts.forEach(nft=>{
+    const uri=h2s(nft.URI||'');
+    const m=uri.match(/^ipfs:\/\/([^/]+)\/(.+)\.json$/i);
+    if(m){nft._cid=m[1];nft._num=m[2];nft._img=`https://ipfs.io/ipfs/${m[1]}/${m[2]}.png`;}
+    nft._meta={name:nft._num||('#'+(nft.nft_serial??'?')),image:nft._img||'',attributes:[],hasSymbol:false,symbolValue:null};
+    nftMap[nft.NFTokenID]=nft;
+  });
+  renderGallery(nfts);
+  // Fetch JSON for names + traits
+  await Promise.allSettled(nfts.slice(0,60).map(async nft=>{
+    if(!nft._cid||!nft._num)return;
+    const urls=[
+      `https://ipfs.io/ipfs/${nft._cid}/${nft._num}.json`,
+      `https://dweb.link/ipfs/${nft._cid}/${nft._num}.json`,
+      `https://gateway.ipfs.io/ipfs/${nft._cid}/${nft._num}.json`,
+    ];
+    for(const url of urls){
+      try{
+        const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
+        if(!r.ok)continue;
+        const meta=await r.json();
+        const attrs=meta.attributes||[];
+        nft._meta={
+          name:meta.name||nft._num,
+          image:`https://ipfs.io/ipfs/${nft._cid}/${nft._num}.png`,
+          attributes:attrs,
+          hasSymbol:!!attrs.find(a=>a.trait_type==='Symbols'),
+          symbolValue:attrs.find(a=>a.trait_type==='Symbols')?.value||null
+        };
+        nftMap[nft.NFTokenID]=nft;
+        return;
+      }catch(e){}
+    }
+  }));
+}
+
+// ── GALLERY ───────────────────────────────────────────────────────────────────
+function renderGallery(nfts){
+  const grid=document.getElementById('wallet-grid');
+  if(!nfts.length){grid.innerHTML='<div class="empty col">No Golden Phoenix NFTs found in this wallet</div>';return;}
+  grid.innerHTML=nfts.map(n=>{
+    const meta=n._meta||{};
+    const img=meta.image||'';
+    const name=meta.name||('#'+(n.nft_serial??'?'));
+    const hasSym=meta.hasSymbol;
+    return`<div class="nft-card${hasSym?' has-sym':''}" onclick="openModal('${n.NFTokenID}')">
+      <div class="nft-img">${img?`<img src="${img}" onerror="this.parentElement.innerHTML='🖼'" loading="lazy"/>`:' 🖼'}</div>
+      ${hasSym?`<div class="nft-sym-dot" title="Symbol: ${esc(meta.symbolValue||'')}">⚡</div>`:''}
+      <div class="nft-info">
+        <div class="nft-name">${esc(name)}</div>
+        <div class="nft-serial">#${n.nft_serial??'?'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── LEVEL ─────────────────────────────────────────────────────────────────────
+const LEVELS=[
+  {n:0,name:'In the Cave',icon:'🌑',desc:'You hold no Golden Phoenix NFTs. The flame awaits.',min:0,max:0},
+  {n:1,name:'Awaken Holder',icon:'🌅',desc:'The Phoenix stirs within you. Your journey has begun.',min:1,max:1},
+  {n:2,name:'Legendary Master',icon:'🔥',desc:'You walk the sacred path. The Phoenix recognizes your devotion.',min:2,max:19},
+  {n:3,name:'YHWH Elohim Supreme',icon:'👁',desc:'You have transcended. The eternal flame burns in your hands.',min:20,max:Infinity},
+];
+function renderLevel(count){
+  const lvl=LEVELS.find(l=>count>=l.min&&count<=l.max)||LEVELS[0];
+  document.getElementById('lvl-icon').textContent=lvl.icon;
+  document.getElementById('lvl-num').textContent='Level '+lvl.n;
+  document.getElementById('lvl-name').textContent=lvl.name;
+  document.getElementById('lvl-desc').textContent=lvl.desc;
+  document.getElementById('ulvl').textContent=lvl.name;
+  const pw=document.getElementById('lvl-prog');
+  if(lvl.n===3){pw.innerHTML=`<div class="lvl-next" style="color:var(--gold);text-align:center;margin-top:12px">✦ Supreme Ascension Achieved ✦</div>`;return;}
+  const next=LEVELS[lvl.n+1];
+  const left=next.min-count;
+  const pct=lvl.n===0?0:Math.min(100,((count-lvl.min)/(20-lvl.min))*100);
+  pw.innerHTML=`<div class="lvl-prog-wrap">
+    <div class="lvl-prog-labels"><span>${count} NFT${count!==1?'s':''}</span><span>${left} to ${next.name}</span></div>
+    <div class="lvl-prog-bar"><div class="lvl-prog-fill" style="width:${pct}%"></div></div>
+    <div class="lvl-next">${left} more NFT${left!==1?'s':''} to reach ${next.name}</div>
+  </div>`;
+}
+
+// ── PERSONAL STATS ─────────────────────────────────────────────────────────────
+function renderPStats(info,gpNFTs){
+  const acc=info?.account_data||{};
+  const bal=parseInt(acc.Balance||'0')/1e6;
+  const res=10+(acc.OwnerCount||0)*2;
+  const avail=Math.max(0,bal-res);
+  document.getElementById('ps-bal').textContent=bal.toLocaleString('en',{maximumFractionDigits:2})+' XRP';
+  document.getElementById('ps-bal-sub').textContent='≈ '+avail.toFixed(2)+' available';
+  document.getElementById('ps-gp').textContent=gpNFTs.length;
+  const est=floorPrice?gpNFTs.length*floorPrice:null;
+  document.getElementById('ps-val').textContent=est?est.toFixed(0)+' XRP':'—';
+  document.getElementById('ps-sym').textContent='...';
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openModal(id){
+  const nft=nftMap[id];if(!nft)return;
+  const meta=nft._meta||{};
+  document.getElementById('m-name').textContent=meta.name||('#'+(nft.nft_serial??'?'));
+  const mi=document.getElementById('m-img');
+  mi.innerHTML=meta.image?`<img src="${meta.image}" onerror="this.parentElement.innerHTML='🖼'"/>`: '🖼';
+  const attrs=meta.attributes||[];
+  document.getElementById('m-traits').innerHTML=attrs.length
+    ?attrs.map(a=>`<div class="trait${a.trait_type==='Symbols'?' sym':''}"><div class="trait-type">${esc(a.trait_type)}</div><div class="trait-val">${esc(String(a.value))}${a.trait_type==='Symbols'?' ⚡':''}</div></div>`).join('')
+    :'<div style="grid-column:1/-1;padding:12px;color:var(--muted);font-size:.8rem">Loading traits...</div>';
+  document.getElementById('m-link').href=BITHOMP_URL+id;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+
+// ── COLLECTION STATS ───────────────────────────────────────────────────────────
+async function loadStats(){
+  try{
+    const acc=await xrpl({command:'account_info',account:GP_ISSUER,ledger_index:'validated'});
+    const a=acc?.account_data||{};
+    document.getElementById('st-minted').textContent=a.MintedNFTokens??'—';
+    document.getElementById('st-burned').textContent=a.BurnedNFTokens??'0';
+  }catch(e){}
+
+  // Holders via nfts_by_issuer (Clio)
+  try{
+    let all=[],marker;
+    for(let i=0;i<5;i++){
+      const r=await xrpl({command:'nfts_by_issuer',issuer:GP_ISSUER,nft_taxon:GP_TAXON,limit:400,...(marker?{marker}:{})});
+      all.push(...(r?.nfts||[]));
+      marker=r?.marker;
+      if(!marker)break;
+    }
+    if(all.length){
+      const owners=new Set(all.map(n=>n.owner||n.Owner).filter(Boolean));
+      document.getElementById('st-holders').textContent=owners.size||all.length;
+    } else document.getElementById('st-holders').textContent='—';
+
+    // Floor — check sell offers on sample
+    let low=Infinity;
+    await Promise.allSettled(all.slice(0,15).map(async n=>{
+      try{
+        const r=await xrpl({command:'nft_sell_offers',nft_id:n.nft_id||n.NFTokenID});
+        (r?.offers||[]).forEach(o=>{if(typeof o.amount==='string'){const x=parseInt(o.amount)/1e6;if(x>0&&x<low)low=x;}});
+      }catch(e){}
+    }));
+    floorPrice=low<Infinity?low:0;
+    document.getElementById('st-floor').innerHTML=floorPrice?`${floorPrice.toFixed(1)}<span class="sc-unit">XRP</span>`:'—';
+  }catch(e){
+    document.getElementById('st-holders').textContent='—';
+    document.getElementById('st-floor').textContent='—';
+  }
+
+  // Volume via Bithomp (free endpoint)
+  try{
+    const v=await bFetch(`nft-volumes?issuer=${GP_ISSUER}&taxon=${GP_TAXON}&list=issuers&period=all`);
+    const entry=v?.volumes?.[0];
+    const raw=entry?.amount??entry?.volume??0;
+    const xrp=raw?Math.round(parseInt(String(raw))/1e6):0;
+    document.getElementById('st-volume').innerHTML=xrp?`${xrp.toLocaleString()}<span class="sc-unit">XRP</span>`:'—';
+  }catch(e){document.getElementById('st-volume').textContent='—';}
+
+  document.getElementById('stats-upd').textContent='Updated '+new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── FEED ──────────────────────────────────────────────────────────────────────
+async function loadFeed(){
+  try{
+    const r=await xrpl({command:'account_tx',account:GP_ISSUER,limit:100,ledger_index_min:-1,ledger_index_max:-1});
+    feedEvents=(r?.transactions||[]).map(entry=>{
+      const tx=entry.tx||entry.tx_json||entry;
+      const meta=entry.meta||{};
+      const type=tx.TransactionType||'';
+      const date=tx.date?new Date((tx.date+946684800)*1000):new Date();
+      let kind='other',icon='📋',title='',price=null,addr='';
+      if(type==='NFTokenMint'){kind='mint';icon='✨';title='New Mint';addr=tx.Account;}
+      else if(type==='NFTokenBurn'){kind='burn';icon='🔥';title='NFT Burned';addr=tx.Account;}
+      else if(type==='NFTokenAcceptOffer'){
+        kind='sale';icon='💰';title='NFT Sold';addr=tx.Account;
+        const offerNode=(meta.AffectedNodes||[]).find(n=>n.DeletedNode?.LedgerEntryType==='NFTokenOffer');
+        if(offerNode){const a=offerNode.DeletedNode?.FinalFields?.Amount||offerNode.DeletedNode?.NewFields?.Amount;if(typeof a==='string')price=parseInt(a)/1e6;}
+      }
+      else if(type==='NFTokenCreateOffer'){
+        const sell=!!(tx.Flags&1);kind=sell?'listing':'offer';icon=sell?'🔔':'🤝';title=sell?'NFT Listed':'Buy Offer';
+        const a=tx.Amount;if(typeof a==='string')price=parseInt(a)/1e6;addr=tx.Account;
+      }
+      else if(type==='NFTokenCancelOffer'){kind='offer';icon='❌';title='Offer Cancelled';addr=tx.Account;}
+      else return null;
+      return{kind,icon,title,price,addr:addr?addr.slice(0,6)+'…'+addr.slice(-4):'',date};
+    }).filter(Boolean);
+    renderFeed();renderJournal();
+  }catch(e){document.getElementById('feed-list').innerHTML='<div class="empty">Could not load feed</div>';}
+}
+
+function setFeed(type,btn){feedFilter=type;document.querySelectorAll('.ff').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderFeed();}
+function renderFeed(){
+  const el=document.getElementById('feed-list');
+  const evs=feedFilter==='all'?feedEvents:feedEvents.filter(e=>e.kind===feedFilter);
+  if(!evs.length){el.innerHTML='<div class="empty">No events found</div>';return;}
+  el.innerHTML=evs.slice(0,30).map(e=>`<div class="fi"><div class="fi-icon ${e.kind}">${e.icon}</div><div class="fi-info"><div class="fi-title">${e.title}</div><div class="fi-meta">${e.addr}</div></div><div><div class="fi-price">${e.price?e.price.toFixed(2)+' XRP':''}</div><div class="fi-time">${ago(e.date)}</div></div></div>`).join('');
+}
+
+// ── JOURNAL ───────────────────────────────────────────────────────────────────
+function renderJournal(){
+  const today=new Date();
+  document.getElementById('jdate').textContent=today.toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const todayEvs=feedEvents.filter(e=>e.date.toDateString()===today.toDateString());
+  const jl=document.getElementById('journal-list');
+  if(!todayEvs.length){jl.innerHTML='<div class="empty">No events recorded today yet.</div>';return;}
+  jl.innerHTML=todayEvs.map(e=>`<div class="ji"><div class="ji-time">${e.date.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}</div><div class="ji-text">${e.icon} ${esc(e.title)}${e.price?' — <strong>'+e.price.toFixed(2)+' XRP</strong>':''}${e.addr?' · <span style="color:var(--muted);font-family:var(--font-m);font-size:.75rem">'+e.addr+'</span>':''}</div></div>`).join('');
+}
+
+// ── SYMBOLS ───────────────────────────────────────────────────────────────────
+async function loadSymbols(){
+  const grid=document.getElementById('sym-grid');
+  try{
+    // Use Bithomp nfts endpoint with metadata
+    let found=[],page=0;
+    while(page<5){
+      const d=await bFetch(`nfts?issuer=${GP_ISSUER}&taxon=${GP_TAXON}&limit=100&offset=${page*100}&metadata=true`);
+      const nfts=d?.nfts||[];
+      found.push(...nfts.filter(n=>(n.metadata?.attributes||[]).find(a=>a.trait_type==='Symbols')));
+      if(nfts.length<100)break;
+      page++;
+    }
+    if(!found.length){
+      // Fallback: scan via XRPL + IPFS (slow but works)
+      grid.innerHTML='<div class="empty col">Scanning collection for Symbol NFTs...</div>';
+      // We know #77 has symbols from earlier — show it as placeholder
+      grid.innerHTML=`<div class="sym-card" onclick="window.open('${BITHOMP_URL}00080FA0CC870E203FABD22F0D3EBD97D2E9C847EA4455EABCDF8193060DFFF8','_blank')">
+        <div class="sym-img"><img src="https://ipfs.io/ipfs/bafybeib4bb76iyrm7hauqdfheevmf3m7h3da2wa42n3iitjbshty65gclu/77.png" onerror="this.parentElement.innerHTML='🖼'" loading="lazy"/></div>
+        <div class="sym-badge">⚡ 777</div>
+        <div class="sym-info"><div class="sym-name">#77</div><div class="sym-val">SYMBOL: 777</div></div>
+      </div>`;
+      return;
+    }
+    found.sort((a,b)=>(a.sequence||0)-(b.sequence||0));
+    grid.innerHTML=found.map(n=>{
+      const sym=(n.metadata?.attributes||[]).find(a=>a.trait_type==='Symbols');
+      const cdnImg=n.assets?.thumbnail||n.assets?.image||'';
+      const serial=n.sequence??n.nft_serial??'';
+      // Use the real CID from URI if available
+      let img=cdnImg;
+      if(!img&&n.uri){const m2=n.uri.match(/ipfs:\/\/([^/]+)\/(.+)\.(png|json)/i);if(m2)img=`https://ipfs.io/ipfs/${m2[1]}/${m2[2]}.png`;}
+      if(!img&&serial)img=`https://ipfs.io/ipfs/bafybeib4bb76iyrm7hauqdfheevmf3m7h3da2wa42n3iitjbshty65gclu/${serial}.png`;
+      const nftId=n.nftokenID||n.NFTokenID||'';
+      return`<div class="sym-card" onclick="window.open('${BITHOMP_URL}${nftId}','_blank')">
+        <div class="sym-img">${img?`<img src="${img}" onerror="this.parentElement.innerHTML='🖼'" loading="lazy"/>`:' 🖼'}</div>
+        <div class="sym-badge">⚡ ${esc(String(sym?.value||''))}</div>
+        <div class="sym-info"><div class="sym-name">${esc(n.metadata?.name||('#'+serial))}</div><div class="sym-val">SYMBOL: ${esc(String(sym?.value||''))}</div></div>
+      </div>`;
+    }).join('');
+  }catch(e){grid.innerHTML='<div class="empty col">Could not load Symbol NFTs</div>';}
+}
+
+// ── DEV NOTE ──────────────────────────────────────────────────────────────────
+async function loadDevNote(){
+  try{
+    const r=await fetch(SHEETS_URL,{signal:AbortSignal.timeout(8000)});
+    const text=await r.text();
+    const json=JSON.parse(text.replace(/^[^(]+\(|\);?$/g,''));
+    const rows=json?.table?.rows||[];
+    if(!rows.length)return;
+    const last=rows[rows.length-1];
+    const date=last.c?.[0]?.v||'';
+    const note=last.c?.[1]?.v||'No note available';
+    document.getElementById('dn-date').textContent=date?new Date(date).toLocaleDateString('en',{month:'long',day:'numeric',year:'numeric'}):'—';
+    document.getElementById('dn-text').textContent=note;
+  }catch(e){document.getElementById('dn-text').textContent='Dev note unavailable — make sure the Google Sheet is set to public.';}
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function h2s(hex){try{const c=hex.replace(/00+$/,'');let r='';for(let i=0;i<c.length;i+=2)r+=String.fromCharCode(parseInt(c.substr(i,2),16));return r;}catch{return hex;}}
+function esc(s){const d=document.createElement('div');d.textContent=String(s);return d.innerHTML;}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function ago(date){const s=Math.floor((Date.now()-date.getTime())/1000);if(s<60)return s+'s ago';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+(async()=>{
+  document.getElementById('jdate').textContent=new Date().toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  await Promise.allSettled([loadStats(),loadFeed(),loadSymbols(),loadDevNote()]);
+  setInterval(loadStats,60000);
+  setInterval(loadFeed,30000);
+})();
+</script>
+</body>
+</html>
