@@ -422,7 +422,13 @@ async function loadMeta(nfts){
   nfts.forEach(nft=>{
     const uri=h2s(nft.URI||'');
     const m=uri.match(/^ipfs:\/\/([^/]+)\/(.+)\.json$/i);
-    if(m){nft._cid=m[1];nft._num=m[2];nft._img=`https://ipfs.io/ipfs/${m[1]}/${m[2]}.png`;}
+    if(m ){
+  nft._cid=m[1];
+  nft._num=m[2];
+  // Usando um gateway alternativo mais estável
+  nft._img=`https://gateway.pinata.cloud/ipfs/${m[1]}/${m[2]}.png`;
+}
+
     nft._meta={name:nft._num||('#'+(nft.nft_serial??'?')),image:nft._img||'',attributes:[],hasSymbol:false,symbolValue:null};
     nftMap[nft.NFTokenID]=nft;
   });
@@ -443,7 +449,7 @@ async function loadMeta(nfts){
         const attrs=meta.attributes||[];
         nft._meta={
           name:meta.name||nft._num,
-          image:`https://ipfs.io/ipfs/${nft._cid}/${nft._num}.png`,
+          image:`https://gateway.pinata.cloud/ipfs/${nft._cid}/${nft._num}.png`,
           attributes:attrs,
           hasSymbol:!!attrs.find(a=>a.trait_type==='Symbols'),
           symbolValue:attrs.find(a=>a.trait_type==='Symbols')?.value||null
