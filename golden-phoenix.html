@@ -680,8 +680,8 @@ async function loadSymbols(){
       const serial=n.sequence??n.nft_serial??'';
       // Use the real CID from URI if available
       let img=cdnImg;
-      if(!img&&n.uri){const m2=n.uri.match(/ipfs:\/\/([^/]+)\/(.+)\.(png|json)/i);if(m2)img=`https://ipfs.io/ipfs/${m2[1]}/${m2[2]}.png`;}
-      if(!img&&serial)img=`https://ipfs.io/ipfs/bafybeib4bb76iyrm7hauqdfheevmf3m7h3da2wa42n3iitjbshty65gclu/${serial}.png`;
+if(!img&&n.uri){const m2=n.uri.match(/ipfs:\/\/([^/]+)\/?(.*)/i);if(m2)img=`https://dweb.link/ipfs/${m2[1]}/${m2[2].replace('.json','')}.png`;}
+      if(!img&&serial)img=`https://dweb.link/ipfs/bafybeib4bb76iyrm7hauqdfheevmf3m7h3da2wa42n3iitjbshty65gclu/${serial}.png`;
       const nftId=n.nftokenID||n.NFTokenID||'';
       return`<div class="sym-card" onclick="window.open('${BITHOMP_URL}${nftId}','_blank')">
         <div class="sym-img">${img?`<img src="${img}" onerror="this.parentElement.innerHTML='🖼'" loading="lazy"/>`:' 🖼'}</div>
