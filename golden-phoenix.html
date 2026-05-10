@@ -420,33 +420,50 @@ async function loadWallet(){
 }
 
 // ── METADATA ──────────────────────────────────────────────────────────────────
+// ── METADATA ──────────────────────────────────────────────────────────────────
 async function loadMeta(nfts){
-  // First: set quick images from URI CID
+  // 1. Tenta imagens rápidas primeiro com um gateway melhor
   nfts.forEach(nft=>{
     const uri=h2s(nft.URI||'');
-    const m=uri.match(/^ipfs:\/\/([^/]+)\/(.+)\.json$/i);
-    if(m){nft._cid=m[1];nft._num=m[2];nft._img=`https://ipfs.io/ipfs/${m[1]}/${m[2]}.png`;}
-    nft._meta={name:nft._num||('#'+(nft.nft_serial??'?')),image:nft._img||'',attributes:[],hasSymbol:false,symbolValue:null};
+    let img = '';
+    
+    // Expressão regular mais flexível (não exige .json no final)
+    const m = uri.match(/ipfs:\/\/([^/]+)\/?(.*)/i);
+    if(m){
+      nft._cid = m[1];
+      let fileId = m[2].replace('.json', ''); // Limpa a extensão se existir
+      nft._num = fileId || String(nft.nft_serial);
+      img = `https://dweb.link/ipfs/${nft._cid}/${nft._num}.png`;
+    }
+    
+    // Fallback garantido da base de dados caso a URI esteja formatada diferente
+    if(!img && nft.nft_serial){
+      img = `https://dweb.link/ipfs/bafybeib4bb76iyrm7hauqdfheevmf3m7h3da2wa42n3iitjbshty65gclu/${nft.nft_serial}.png`;
+    }
+
+    nft._meta={name:nft._num||('#'+(nft.nft_serial??'?')),image:img,attributes:[],hasSymbol:false,symbolValue:null};
     nftMap[nft.NFTokenID]=nft;
   });
+  
   renderGallery(nfts);
-  // Fetch JSON for names + traits
+  
+  // 2. Busca o JSON para os nomes e traits usando múltiplos gateways rápidos
   await Promise.allSettled(nfts.slice(0,60).map(async nft=>{
     if(!nft._cid||!nft._num)return;
     const urls=[
-      `https://ipfs.io/ipfs/${nft._cid}/${nft._num}.json`,
       `https://dweb.link/ipfs/${nft._cid}/${nft._num}.json`,
-      `https://gateway.ipfs.io/ipfs/${nft._cid}/${nft._num}.json`,
+      `https://cloudflare-ipfs.com/ipfs/${nft._cid}/${nft._num}.json`,
+      `https://gateway.pinata.cloud/ipfs/${nft._cid}/${nft._num}.json`
     ];
     for(const url of urls){
       try{
-        const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
+        const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
         if(!r.ok)continue;
         const meta=await r.json();
         const attrs=meta.attributes||[];
         nft._meta={
           name:meta.name||nft._num,
-          image:`https://ipfs.io/ipfs/${nft._cid}/${nft._num}.png`,
+          image:`https://dweb.link/ipfs/${nft._cid}/${nft._num}.png`,
           attributes:attrs,
           hasSymbol:!!attrs.find(a=>a.trait_type==='Symbols'),
           symbolValue:attrs.find(a=>a.trait_type==='Symbols')?.value||null
