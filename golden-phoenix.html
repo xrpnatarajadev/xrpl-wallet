@@ -652,20 +652,20 @@ async function loadSymbols(){
   grid.innerHTML='<div class="empty ecol"><span class="spin"></span> Scanning collection for Symbol NFTs...</div>';
   try{
     // Step 1: Get all NFTs in the collection via XRPL (nfts_by_issuer - Clio node)
-    let allNFTs=[], marker;
-    for(let i=0;i<5;i++){
-      try{
-        const r=await xrpl({command:'nfts_by_issuer',issuer:GP_ISSUER,nft_taxon:GP_TAXON,limit:400,...(marker?{marker}:{})});
-        allNFTs.push(...(r?.nfts||[]));
-        marker=r?.marker;
-        if(!marker)break;
-      }catch(e){break;}
-    }
-
-    if(!allNFTs.length){
-      grid.innerHTML='<div class="empty ecol">Could not load collection NFTs</div>';
-      return;
-    }
+    // Busca todos os NFTs da coleção via XRPL (confiável, tem todos os 168)
+let allNFTs = [], marker;
+for(let i = 0; i < 5; i++){
+  const r = await xrpl({
+    command: 'nfts_by_issuer',
+    issuer: GP_ISSUER,
+    nft_taxon: GP_TAXON,
+    limit: 400,
+    ...(marker ? {marker} : {})
+  });
+  allNFTs.push(...(r?.nfts || []));
+  marker = r?.marker;
+  if(!marker) break;
+}
 
     // Step 2: For each NFT, get metadata via Bithomp individual endpoint
     // Bithomp free plan returns metadata.attributes on individual nft endpoint
